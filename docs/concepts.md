@@ -10,6 +10,19 @@ sharing one unpushed commit count it once in the repository summary.
 "No remote-tracking ref" means as of your last fetch. repo-ledger never fetches,
 because fetching writes to the repository and needs the network.
 
+Squash and rebase merges inflate this count. When a branch is squash-merged on
+the host, its original commits stay unreachable from any remote ref, so a local
+copy of that branch still counts as unique even though its changes shipped.
+Check such a branch with `git cherry -v <upstream> <branch>`: lines starting
+with `-` are already upstream by patch content. Delete the branch once you have
+confirmed that; repo-ledger does not do patch-id matching yet.
+
+## Privacy of a receipt
+
+A receipt names local paths, branch names, remote URLs with credentials
+removed, and commit hashes. It never contains file contents. Treat it like a
+directory listing: fine for your own records, worth a read before you post it.
+
 ## At risk
 
 A repository is at risk when it has unique commits, stashes, or dirty paths in
