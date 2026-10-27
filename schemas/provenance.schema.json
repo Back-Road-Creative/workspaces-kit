@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "repo-ledger.provenance/1",
+  "title": "repo-ledger provenance receipt",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "repo-ledger.provenance/1"
+    },
+    "interpreter": {
+      "type": "string"
+    },
+    "distribution": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "installed": {
+          "type": "boolean"
+        },
+        "version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "editable": {
+          "type": "boolean"
+        },
+        "commit": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "commit",
+        "editable",
+        "installed",
+        "name",
+        "version"
+      ],
+      "additionalProperties": false
+    },
+    "module": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "origin": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "owned_by_distribution": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "name",
+        "origin",
+        "owned_by_distribution"
+      ],
+      "additionalProperties": false
+    },
+    "expected_commit": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[0-9a-f]{40,64}$"
+    },
+    "verified_pin": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "available": {
+      "type": "boolean"
+    },
+    "repo": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "dirty": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "dirty",
+        "path"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "schema",
+    "interpreter",
+    "distribution",
+    "module",
+    "expected_commit",
+    "verified_pin",
+    "available"
+  ],
+  "additionalProperties": false
+}

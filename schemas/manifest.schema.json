@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "repo-ledger.manifest/1",
+  "title": "repo-ledger manifest (TOML, shown as JSON)",
+  "type": "object",
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "repo": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "path"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "version",
+    "repo"
+  ],
+  "additionalProperties": false
+}

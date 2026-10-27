@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "workspaces-kit.catalog/1",
+  "title": "catalog/projects.toml (TOML, shown as JSON)",
+  "type": "object",
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "project": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]*$"
+          },
+          "repository": {
+            "type": "string",
+            "pattern": "^https://github\\.com/[A-Za-z0-9-]+/[A-Za-z0-9._-]+$"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "license": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9.+-]+$"
+          },
+          "default_branch": {
+            "type": "string"
+          },
+          "checked": {
+            "type": "string",
+            "format": "date"
+          }
+        },
+        "required": [
+          "checked",
+          "default_branch",
+          "id",
+          "license",
+          "repository",
+          "summary"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "project",
+    "version"
+  ],
+  "additionalProperties": false
+}

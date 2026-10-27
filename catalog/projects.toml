@@ -1,0 +1,106 @@
+# Public projects in the Back Road Creative portfolio.
+#
+# Each field is copied from the project's GitHub repository (description,
+# detected license, default branch) on the date in `checked`. Nothing here is a
+# support promise. Run `python tests/catalog_check.py` after editing.
+#
+# license: the SPDX id GitHub detects, or "none-declared".
+# summary: the repository description verbatim; "" when it has none.
+
+version = 1
+
+[[project]]
+id = "framegrade"
+repository = "https://github.com/Back-Road-Creative/framegrade"
+summary = "The media engine under Waypost: grades video and photos, checks each finished file before delivery, and builds route films from GPS tracks"
+license = "Apache-2.0"
+default_branch = "main"
+checked = 2026-10-27
+
+[[project]]
+id = "waypost"
+repository = "https://github.com/Back-Road-Creative/waypost"
+summary = "A console on your own computer that runs a creator's video, photo and SEO work and queues posts for YouTube, Instagram and Facebook, one tab per brand"
+license = "MIT"
+default_branch = "main"
+checked = 2026-10-27
+
+[[project]]
+id = "gps-journey"
+repository = "https://github.com/Back-Road-Creative/gps-journey"
+summary = "GPS journey processing: GPX parsing, geocoding, photo integration, and Hugo content generation"
+license = "MIT"
+default_branch = "main"
+checked = 2026-10-27
+
+[[project]]
+id = "quiet-corners"
+repository = "https://github.com/Back-Road-Creative/quiet-corners"
+summary = "Census-driven ranking of remote, stable, low-sprawl US towns"
+license = "MIT"
+default_branch = "main"
+checked = 2026-10-27
+
+[[project]]
+id = "band-coach"
+repository = "https://github.com/Back-Road-Creative/band-coach"
+summary = "Adaptive music-instrument coach that runs from a single HTML file"
+license = "Apache-2.0"
+default_branch = "main"
+checked = 2026-10-27
+
+[[project]]
+id = "rigscore"
+repository = "https://github.com/Back-Road-Creative/rigscore"
+summary = "Configuration hygiene checker for AI dev environments. Scans locally, no external calls."
+license = "MIT"
+default_branch = "main"
+checked = 2026-10-27
+
+[[project]]
+id = "free-inference-router"
+repository = "https://github.com/Back-Road-Creative/free-inference-router"
+summary = "Deterministic lane selector and zero-spend guard rails for free remote LLM providers"
+license = "MIT"
+default_branch = "main"
+checked = 2026-10-27
+
+[[project]]
+id = "claude-batch-runner"
+repository = "https://github.com/Back-Road-Creative/claude-batch-runner"
+summary = "Declarative parallel agent campaigns with schema-verified results and a cost table"
+license = "MIT"
+default_branch = "main"
+checked = 2026-10-27
+
+[[project]]
+id = "agent-audit"
+repository = "https://github.com/Back-Road-Creative/agent-audit"
+summary = "Audit the skills, instruction files and workflows your AI agents actually read"
+license = "MIT"
+default_branch = "main"
+checked = 2026-10-27
+
+[[project]]
+id = "yearend-planner"
+repository = "https://github.com/Back-Road-Creative/yearend-planner"
+summary = "Year-end tax & retirement planner for Windows. Deterministic, local, AGPL-3.0."
+license = "AGPL-3.0"
+default_branch = "main"
+checked = 2026-10-27
+
+[[project]]
+id = "driftless"
+repository = "https://github.com/Back-Road-Creative/driftless"
+summary = ""
+license = "Apache-2.0"
+default_branch = "master"
+checked = 2026-10-27
+
+[[project]]
+id = "headlessmode"
+repository = "https://github.com/Back-Road-Creative/headlessmode"
+summary = ""
+license = "none-declared"
+default_branch = "master"
+checked = 2026-10-27

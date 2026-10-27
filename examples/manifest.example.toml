@@ -1,0 +1,9 @@
+# repo-ledger manifest. Paths are relative to this file, absolute, or start with ~.
+version = 1
+
+[[repo]]
+path = "demo/my app"
+name = "my-app"
+
+[[repo]]
+path = "demo/notes"

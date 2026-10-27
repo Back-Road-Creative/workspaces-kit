@@ -1,0 +1,362 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "repo-ledger.inventory/1",
+  "title": "repo-ledger inventory receipt",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "repo-ledger.inventory/1"
+    },
+    "tool_version": {
+      "type": "string"
+    },
+    "git_version": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "fetched": {
+      "const": false
+    },
+    "repos": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "path": {
+                "type": "string"
+              },
+              "state": {
+                "const": "ok"
+              },
+              "reason": {
+                "type": "null"
+              },
+              "bare": {
+                "type": "boolean"
+              },
+              "git_common_dir": {
+                "type": "string"
+              },
+              "head": {
+                "type": "object",
+                "properties": {
+                  "branch": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "commit": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "pattern": "^[0-9a-f]{40,64}$"
+                  },
+                  "detached": {
+                    "type": "boolean"
+                  },
+                  "unborn": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "branch",
+                  "commit",
+                  "detached",
+                  "unborn"
+                ],
+                "additionalProperties": false
+              },
+              "remotes": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "url": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "url"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "last_fetch": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "branches": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "commit": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{40,64}$"
+                    },
+                    "upstream": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "upstream_gone": {
+                      "type": "boolean"
+                    },
+                    "ahead": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ],
+                      "minimum": 0
+                    },
+                    "behind": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ],
+                      "minimum": 0
+                    },
+                    "unique_commits": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  },
+                  "required": [
+                    "ahead",
+                    "behind",
+                    "commit",
+                    "name",
+                    "unique_commits",
+                    "upstream",
+                    "upstream_gone"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "stashes": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "worktrees": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "path": {
+                      "type": "string"
+                    },
+                    "head": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "pattern": "^[0-9a-f]{40,64}$"
+                    },
+                    "branch": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "detached": {
+                      "type": "boolean"
+                    },
+                    "bare": {
+                      "type": "boolean"
+                    },
+                    "locked": {
+                      "type": "boolean"
+                    },
+                    "prunable": {
+                      "type": "boolean"
+                    },
+                    "main": {
+                      "type": "boolean"
+                    },
+                    "exists": {
+                      "type": "boolean"
+                    },
+                    "dirty": {
+                      "oneOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "staged": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "unstaged": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "untracked": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "conflicted": {
+                              "type": "integer",
+                              "minimum": 0
+                            }
+                          },
+                          "required": [
+                            "conflicted",
+                            "staged",
+                            "unstaged",
+                            "untracked"
+                          ],
+                          "additionalProperties": false
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "bare",
+                    "branch",
+                    "detached",
+                    "dirty",
+                    "exists",
+                    "head",
+                    "locked",
+                    "main",
+                    "path",
+                    "prunable"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "summary": {
+                "type": "object",
+                "properties": {
+                  "unique_commits": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "branches_with_unique_commits": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "stashes": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "dirty_paths": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "missing_worktrees": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "at_risk": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "at_risk",
+                  "branches_with_unique_commits",
+                  "dirty_paths",
+                  "missing_worktrees",
+                  "stashes",
+                  "unique_commits"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "bare",
+              "branches",
+              "git_common_dir",
+              "head",
+              "last_fetch",
+              "name",
+              "path",
+              "reason",
+              "remotes",
+              "stashes",
+              "state",
+              "summary",
+              "worktrees"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "path": {
+                "type": "string"
+              },
+              "state": {
+                "enum": [
+                  "missing",
+                  "not-a-repo",
+                  "refused"
+                ]
+              },
+              "reason": {
+                "enum": [
+                  "path-not-found",
+                  "not-a-directory",
+                  "inside-another-repo",
+                  "not-a-repo",
+                  "dubious-ownership",
+                  "permission-denied",
+                  "git-error"
+                ]
+              },
+              "inside": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "path",
+              "state",
+              "reason"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      }
+    }
+  },
+  "required": [
+    "fetched",
+    "generated_at",
+    "git_version",
+    "repos",
+    "schema",
+    "tool_version"
+  ],
+  "additionalProperties": false
+}
