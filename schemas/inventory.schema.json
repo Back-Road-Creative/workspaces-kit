@@ -233,6 +233,12 @@
                           "additionalProperties": false
                         }
                       ]
+                    },
+                    "status_error": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
                     }
                   },
                   "required": [
@@ -245,7 +251,8 @@
                     "locked",
                     "main",
                     "path",
-                    "prunable"
+                    "prunable",
+                    "status_error"
                   ],
                   "additionalProperties": false
                 }
@@ -277,6 +284,10 @@
                   },
                   "at_risk": {
                     "type": "boolean"
+                  },
+                  "unreadable_worktrees": {
+                    "type": "integer",
+                    "minimum": 0
                   }
                 },
                 "required": [
@@ -285,7 +296,8 @@
                   "dirty_paths",
                   "missing_worktrees",
                   "stashes",
-                  "unique_commits"
+                  "unique_commits",
+                  "unreadable_worktrees"
                 ],
                 "additionalProperties": false
               }

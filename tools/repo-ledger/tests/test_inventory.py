@@ -30,7 +30,8 @@ def test_clean_pushed_repo_is_not_at_risk(make_repo, capsys):
     assert entry["branches"][0]["upstream"] == "origin/main"
     assert entry["summary"] == {
         "unique_commits": 0, "branches_with_unique_commits": [], "stashes": 0,
-        "dirty_paths": 0, "missing_worktrees": 0, "at_risk": False,
+        "dirty_paths": 0, "missing_worktrees": 0, "unreadable_worktrees": 0,
+        "at_risk": False,
     }
     assert data["fetched"] is False
     assert data["schema"] == "repo-ledger.inventory/1"
@@ -175,6 +176,41 @@ def test_scan_reports_a_repository_once_when_its_linked_worktree_is_nearby(make_
     assert [r["name"] for r in data["repos"]] == ["main repo"]
     assert data["repos"][0]["summary"]["unique_commits"] == 1
     assert len(data["repos"][0]["worktrees"]) == 2
+
+
+def _refuse(monkeypatch, when):
+    real = gitcmd.run
+
+    def fake(repo, *args, check=True):
+        if when(Path(repo), args):
+            raise gitcmd.GitError("fatal: detected dubious ownership in repository at 'x'", 128)
+        return real(repo, *args, check=check)
+
+    monkeypatch.setattr(gitcmd, "run", fake)
+
+
+def test_unreadable_linked_worktree_is_reported_not_crashed(make_repo, tmp_path, capsys,
+                                                             monkeypatch):
+    repo = make_repo()
+    other = tmp_path / "other user tree"
+    git(repo, "worktree", "add", "-q", "-b", "theirs", str(other))
+    _refuse(monkeypatch, lambda path, args: path == other and args[0] == "status")
+    code, data = receipt(capsys, "--check", str(repo))
+    entry = data["repos"][0]
+    assert entry["state"] == "ok"
+    linked = [t for t in entry["worktrees"] if not t["main"]][0]
+    assert linked["dirty"] is None and linked["status_error"] == "dubious-ownership"
+    assert entry["summary"]["unreadable_worktrees"] == 1
+    assert code == cli.EXIT_FINDING  # unknown state is never reported as safe
+
+
+def test_git_failure_after_open_is_a_refusal_not_a_crash(make_repo, capsys, monkeypatch):
+    repo = make_repo()
+    _refuse(monkeypatch, lambda path, args: args[0] == "for-each-ref")
+    code, data = receipt(capsys, str(repo))
+    assert code == 0
+    assert data["repos"][0]["state"] == "refused"
+    assert data["repos"][0]["reason"] == "dubious-ownership"
 
 
 def test_duplicate_targets_are_reported_once(make_repo, capsys):

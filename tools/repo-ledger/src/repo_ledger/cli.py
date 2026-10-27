@@ -82,7 +82,7 @@ def cmd_inventory(args: argparse.Namespace) -> int:
     else:
         sys.stdout.write(render.inventory_markdown(receipt))
     if args.check and any(r["state"] != "ok" or r["summary"]["at_risk"]
-                          for r in receipt["repos"]):
+                          or r["summary"]["unreadable_worktrees"] for r in receipt["repos"]):
         return EXIT_FINDING
     return EXIT_OK
 
@@ -125,7 +125,8 @@ def parser() -> argparse.ArgumentParser:
     inv.add_argument("--depth", type=int, default=1, help="levels below --scan DIR (default 1)")
     inv.add_argument("--json", action="store_true", help="print the JSON receipt")
     inv.add_argument("--check", action="store_true",
-                     help="exit 1 if any repository is unreadable, missing or holds local-only work")
+                     help="exit 1 if any repository or worktree is unreadable or missing, "
+                          "or holds local-only work")
     inv.add_argument("--skip-worktree-status", action="store_true",
                      help="do not run status in linked worktrees (faster, undercounts dirty files)")
     inv.set_defaults(func=cmd_inventory)

@@ -20,7 +20,9 @@ def inventory_markdown(receipt: dict) -> str:
         summary = repo["summary"]
         trees = len(repo["worktrees"])
         missing = summary["missing_worktrees"]
-        tree_cell = f"{trees}" + (f" ({missing} missing)" if missing else "")
+        unreadable = summary["unreadable_worktrees"]
+        notes = [f"{missing} missing"] * bool(missing) + [f"{unreadable} unreadable"] * bool(unreadable)
+        tree_cell = f"{trees}" + (f" ({', '.join(notes)})" if notes else "")
         rows.append("| " + " | ".join(_cell(v) for v in (
             repo["name"], "ok", branch, summary["dirty_paths"], summary["stashes"],
             summary["unique_commits"], tree_cell, "yes" if summary["at_risk"] else "no",

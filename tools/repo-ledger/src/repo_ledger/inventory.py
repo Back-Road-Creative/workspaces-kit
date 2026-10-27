@@ -142,40 +142,54 @@ def inspect(path: Path, name: str | None = None, worktree_status: bool = True) -
         return {**entry, "state": state, "reason": reason}
     if top is not None and Path(top).resolve() != path.resolve():
         return {**entry, "state": "not-a-repo", "reason": "inside-another-repo", "inside": top}
-    common_dir = _absolute(path, common).resolve()
-    branch = gitcmd.run(path, "symbolic-ref", "-q", "--short", "HEAD", check=False).strip() or None
-    head = gitcmd.run(path, "rev-parse", "-q", "--verify", "HEAD", check=False).strip() or None
-    entry.update(
-        bare=is_bare,
-        git_common_dir=str(common_dir),
-        head={"branch": branch, "commit": head, "detached": branch is None and head is not None,
-              "unborn": head is None},
-        remotes=_remotes(path),
-        last_fetch=_last_fetch(common_dir),
-        branches=_branches(path),
-        stashes=_stash_count(path),
-    )
-    trees = _worktrees(path)
-    dirty_total = 0
-    for tree in trees:
-        tree["dirty"] = None
-        if tree["bare"] or not tree["exists"]:
-            continue
-        if tree["main"] or worktree_status:
-            tree["dirty"] = _status_counts(Path(tree["path"]))
-            dirty_total += sum(tree["dirty"].values())
-    entry["worktrees"] = trees
-    unique_total = int(gitcmd.run(path, "rev-list", "--count", "--branches", "--not",
-                                  "--remotes").strip() or 0)
-    local_only = [b["name"] for b in entry["branches"] if b["unique_commits"]]
-    entry["summary"] = {
-        "unique_commits": unique_total,
-        "branches_with_unique_commits": local_only,
-        "stashes": entry["stashes"],
-        "dirty_paths": dirty_total,
-        "missing_worktrees": sum(1 for t in trees if not t["exists"]),
-        "at_risk": bool(unique_total or entry["stashes"] or dirty_total),
-    }
+    try:
+        common_dir = _absolute(path, common).resolve()
+        branch = gitcmd.run(path, "symbolic-ref", "-q", "--short", "HEAD",
+                            check=False).strip() or None
+        head = gitcmd.run(path, "rev-parse", "-q", "--verify", "HEAD",
+                          check=False).strip() or None
+        entry.update(
+            bare=is_bare,
+            git_common_dir=str(common_dir),
+            head={"branch": branch, "commit": head, "detached": branch is None and head is not None,
+                  "unborn": head is None},
+            remotes=_remotes(path),
+            last_fetch=_last_fetch(common_dir),
+            branches=_branches(path),
+            stashes=_stash_count(path),
+        )
+        trees = _worktrees(path)
+        dirty_total = 0
+        for tree in trees:
+            tree["dirty"] = None
+            tree["status_error"] = None
+            if tree["bare"] or not tree["exists"]:
+                continue
+            if tree["main"] or worktree_status:
+                try:
+                    tree["dirty"] = _status_counts(Path(tree["path"]))
+                except gitcmd.GitError as exc:
+                    # e.g. a linked worktree another user owns: unknown, never "clean".
+                    tree["status_error"] = gitcmd.classify_error(exc.stderr)
+                    continue
+                dirty_total += sum(tree["dirty"].values())
+        entry["worktrees"] = trees
+        unique_total = int(gitcmd.run(path, "rev-list", "--count", "--branches", "--not",
+                                      "--remotes").strip() or 0)
+        local_only = [b["name"] for b in entry["branches"] if b["unique_commits"]]
+        entry["summary"] = {
+            "unique_commits": unique_total,
+            "branches_with_unique_commits": local_only,
+            "stashes": entry["stashes"],
+            "dirty_paths": dirty_total,
+            "missing_worktrees": sum(1 for t in trees if not t["exists"]),
+            "unreadable_worktrees": sum(1 for t in trees if t["status_error"]),
+            "at_risk": bool(unique_total or entry["stashes"] or dirty_total),
+        }
+    except gitcmd.GitError as exc:
+        # Git opened the repository but refused a later read. Report it; never crash.
+        return {"name": entry["name"], "path": entry["path"], "state": "refused",
+                "reason": gitcmd.classify_error(exc.stderr)}
     return entry
 
 
