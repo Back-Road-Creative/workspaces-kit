@@ -70,10 +70,106 @@ def _worktrees(repo: Path) -> list[dict]:
     return trees
 
 
+# Patch text must come from git's own diff: a repository's config can name an
+# external diff, a textconv filter or a signature check, and each runs a command.
+_DIFF = ("--no-ext-diff", "--no-textconv", "--no-color")
+
+
+def _default_targets(repo: Path) -> list[str]:
+    """Each remote's default branch: its HEAD, else ``main``, else ``master``."""
+    out = gitcmd.run(repo, "for-each-ref", "--format=%(refname)%00%(symref)", "refs/remotes")
+    refs: dict[str, set[str]] = {}
+    heads: dict[str, str] = {}
+    for line in out.splitlines():
+        ref, _, symref = line.partition("\0")
+        remote, _, branch = ref.removeprefix("refs/remotes/").rpartition("/")
+        if branch == "HEAD":
+            heads[remote] = symref
+        else:
+            refs.setdefault(remote, set()).add(ref)
+    targets = []
+    for remote, names in sorted(refs.items()):
+        options = [heads.get(remote)] + [f"refs/remotes/{remote}/{b}" for b in ("main", "master")]
+        pick = next((o for o in options if o in names), None)
+        if pick:
+            targets.append(pick)
+    return targets
+
+
+_LOG_PATCH = ("log", "-p", *_DIFF, "--no-renames", "--no-show-signature", "--no-merges",
+              "--format=commit %H")
+
+
+def _patch_ids(repo: Path, *log_args: str) -> dict[str, str]:
+    """commit -> patch id, for each non-merge commit ``git log <log_args>`` lists."""
+    out = gitcmd.piped(repo, (*_LOG_PATCH, *log_args), ("patch-id", "--stable"))
+    return {commit: pid for pid, commit in (line.split() for line in out.splitlines() if line)}
+
+
+def _file_sets(repo: Path, *log_args: str) -> set[frozenset[str]]:
+    """The set of paths each non-merge commit ``git log <log_args>`` lists changes."""
+    out = gitcmd.run(repo, "log", "--no-merges", "--no-renames", "--format=commit %H",
+                     "--name-only", *log_args)
+    sets: set[frozenset[str]] = set()
+    for chunk in out.split("commit ")[1:]:
+        sets.add(frozenset(line for line in chunk.splitlines()[1:] if line))
+    return sets
+
+
+def _squash_ids(repo: Path, target: str, tips: list[str]) -> dict[str, str]:
+    """branch tip -> patch id of its whole diff from its merge base with ``target``."""
+    text = "".join(f"commit {tip}\n" + gitcmd.run(repo, "diff", *_DIFF, "--no-renames",
+                                                   f"{target}...{tip}")
+                   for tip in tips)
+    out = gitcmd.run(repo, "patch-id", "--stable", stdin=text) if text else ""
+    return {commit: pid for pid, commit in (line.split() for line in out.splitlines() if line)}
+
+
+def _mark_landed(repo: Path, branches: list[dict], unique: dict[str, list[str]]) -> None:
+    """Set each branch's ``unlanded_commits``: unique commits with no patch on a default branch.
+
+    A commit has landed when a default branch has a commit with the same patch
+    (a rebase or cherry-pick merge). A whole branch has landed when one commit
+    there has the patch of the branch's full diff from its merge base (a squash
+    merge). Each default branch is read once, back to the common ancestor of every
+    branch, and a branch's full diff is built only when its changed files match
+    the files of some commit there, so the cost stays near one history pass.
+    """
+    for branch in branches:
+        branch["unlanded_commits"] = len(unique[branch["commit"]])
+    left = {b["commit"]: set(unique[b["commit"]]) for b in branches if b["unlanded_commits"]}
+    if not left:
+        return
+    own = _patch_ids(repo, "--branches", "--not", "--remotes")
+    for target in _default_targets(repo):
+        oldest = gitcmd.run(repo, "merge-base", "--octopus", target, *sorted(left),
+                            check=False).strip()
+        since = ["--not", oldest] if oldest else []
+        landed = set(_patch_ids(repo, target, *since).values())
+        for commits in left.values():
+            commits -= {c for c in commits if own.get(c) in landed}
+        shapes = _file_sets(repo, target, *since)
+        candidates = []
+        for tip, commits in left.items():
+            if not commits:
+                continue
+            names = gitcmd.run(repo, "diff", "--no-renames", "--name-only", f"{target}...{tip}",
+                               check=False).splitlines()
+            if names and frozenset(n for n in names if n) in shapes:
+                candidates.append(tip)
+        for tip, pid in _squash_ids(repo, target, candidates).items():
+            if pid in landed:
+                left[tip] = set()
+    for branch in branches:
+        if branch["commit"] in left:
+            branch["unlanded_commits"] = len(left[branch["commit"]])
+
+
 def _branches(repo: Path) -> list[dict]:
     fmt = "%(refname:short)%00%(objectname)%00%(upstream:short)%00%(upstream:track,nobracket)"
     out = gitcmd.run(repo, "for-each-ref", f"--format={fmt}", "refs/heads")
     branches = []
+    unique: dict[str, list[str]] = {}
     for line in out.splitlines():
         name, sha, upstream, track = (line.split("\0") + ["", "", ""])[:4]
         ahead = behind = 0
@@ -83,7 +179,7 @@ def _branches(repo: Path) -> list[dict]:
                 ahead = int(number)
             elif word == "behind":
                 behind = int(number)
-        unique = int(gitcmd.run(repo, "rev-list", "--count", sha, "--not", "--remotes").strip() or 0)
+        unique[sha] = gitcmd.run(repo, "rev-list", sha, "--not", "--remotes").split()
         branches.append({
             "name": name,
             "commit": sha,
@@ -91,8 +187,9 @@ def _branches(repo: Path) -> list[dict]:
             "upstream_gone": track.strip() == "gone",
             "ahead": ahead,
             "behind": behind,
-            "unique_commits": unique,
+            "unique_commits": len(unique[sha]),
         })
+    _mark_landed(repo, branches, unique)
     return branches
 
 
@@ -180,6 +277,8 @@ def inspect(path: Path, name: str | None = None, worktree_status: bool = True) -
         entry["summary"] = {
             "unique_commits": unique_total,
             "branches_with_unique_commits": local_only,
+            "branches_already_landed": [b["name"] for b in entry["branches"]
+                                        if b["unique_commits"] and not b["unlanded_commits"]],
             "stashes": entry["stashes"],
             "dirty_paths": dirty_total,
             "missing_worktrees": sum(1 for t in trees if not t["exists"]),

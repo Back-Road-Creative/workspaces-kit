@@ -32,5 +32,9 @@ def inventory_markdown(receipt: dict) -> str:
         if repo["state"] == "ok" and repo["summary"]["branches_with_unique_commits"]:
             names = ", ".join(repo["summary"]["branches_with_unique_commits"])
             lines.append(f"- {_cell(repo['name'])}: branches with commits on no remote: {names}")
+        if repo["state"] == "ok" and repo["summary"]["branches_already_landed"]:
+            names = ", ".join(repo["summary"]["branches_already_landed"])
+            lines.append(f"- {_cell(repo['name'])}: of those, already on a remote default branch "
+                         f"by patch content: {names}")
     lines.append("Remote refs are as of each repo's last fetch; nothing was fetched.")
     return "\n".join(lines) + "\n"

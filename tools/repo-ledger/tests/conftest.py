@@ -21,8 +21,10 @@ def isolated_git(tmp_path, monkeypatch):
 
 
 def git(cwd: Path, *args: str) -> str:
-    return subprocess.run(["git", "-C", str(cwd), *args], check=True,
-                          capture_output=True, text=True).stdout
+    proc = subprocess.run(["git", "-C", str(cwd), *args], capture_output=True, text=True)
+    if proc.returncode:
+        raise AssertionError(f"git {' '.join(args)} failed: {proc.stderr.strip()}")
+    return proc.stdout
 
 
 def commit(repo: Path, name: str = "file.txt", text: str = "x\n") -> str:

@@ -28,6 +28,10 @@ For each repository it reports:
 - **unique commits**: commits reachable from a local branch but from no
   remote-tracking ref. These are lost if the disk is.
 - **branches with unique commits**, by name, including branches with no upstream.
+- **branches already landed**: of those, the ones whose changes are already on a
+  remote's default branch by patch content, as after a squash or rebase merge.
+  Each branch's **unlanded commits** counts what has not landed. See
+  [Concepts](../../docs/concepts.md#already-landed).
 - **stashes** and **dirty paths** (staged, unstaged, untracked, conflicted),
   counted in the main worktree and in every linked worktree.
 - **worktrees**, including ones whose directory is gone.

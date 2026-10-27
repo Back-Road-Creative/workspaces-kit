@@ -29,7 +29,8 @@ def test_clean_pushed_repo_is_not_at_risk(make_repo, capsys):
     assert entry["head"]["branch"] == "main"
     assert entry["branches"][0]["upstream"] == "origin/main"
     assert entry["summary"] == {
-        "unique_commits": 0, "branches_with_unique_commits": [], "stashes": 0,
+        "unique_commits": 0, "branches_with_unique_commits": [], "branches_already_landed": [],
+        "stashes": 0,
         "dirty_paths": 0, "missing_worktrees": 0, "unreadable_worktrees": 0,
         "at_risk": False,
     }
@@ -53,7 +54,68 @@ def test_unpushed_and_local_only_branches_are_counted(make_repo, capsys):
     assert by_name["local-only"]["unique_commits"] == 2
     assert entry["summary"]["unique_commits"] == 2  # union, not a sum
     assert entry["summary"]["branches_with_unique_commits"] == ["local-only", "main"]
+    assert by_name["local-only"]["unlanded_commits"] == 2
+    assert entry["summary"]["branches_already_landed"] == []
     assert entry["summary"]["at_risk"] is True
+
+
+def _landed(make_repo, tmp_path, how):
+    """A local branch `done` whose change reached origin/main by squash or cherry-pick."""
+    repo = make_repo()
+    git(repo, "switch", "-q", "-c", "done")
+    commit(repo, "a.txt", "a\n")
+    commit(repo, "b.txt", "b\n")
+    git(repo, "switch", "-q", "main")
+    commit(repo, "other.txt")  # main moves on, so nothing is a fast-forward
+    if how == "squash":
+        git(repo, "merge", "-q", "--squash", "done")
+        git(repo, "commit", "-q", "-m", "squash done")
+    else:
+        git(repo, "cherry-pick", "done~1", "done")
+    git(repo, "update-ref", "refs/remotes/origin/main", "main")  # as a fetch would leave it
+    return repo
+
+
+@pytest.mark.parametrize("how", ["squash", "cherry-pick"])
+def test_branch_whose_changes_already_landed_is_named(make_repo, tmp_path, capsys, how):
+    repo = _landed(make_repo, tmp_path, how)
+    git(repo, "switch", "-q", "-c", "open")
+    commit(repo, "open.txt")
+    git(repo, "switch", "-q", "main")
+    _, data = receipt(capsys, str(repo))
+    entry = data["repos"][0]
+    by_name = {b["name"]: b for b in entry["branches"]}
+    assert by_name["done"]["unique_commits"] == 2
+    assert by_name["done"]["unlanded_commits"] == 0
+    assert by_name["open"]["unlanded_commits"] == 1
+    assert entry["summary"]["branches_already_landed"] == ["done"]
+    assert entry["summary"]["at_risk"] is True  # the commits themselves are still local-only
+
+
+def test_partly_landed_branch_counts_only_the_rest(make_repo, capsys):
+    repo = make_repo()
+    git(repo, "switch", "-q", "-c", "half")
+    commit(repo, "a.txt", "a\n")
+    commit(repo, "b.txt", "b\n")
+    git(repo, "switch", "-q", "main")
+    commit(repo, "other.txt")  # else the pick can recreate the same commit hash
+    git(repo, "cherry-pick", "half~1")
+    git(repo, "update-ref", "refs/remotes/origin/main", "main")
+    _, data = receipt(capsys, str(repo))
+    entry = data["repos"][0]
+    half = next(b for b in entry["branches"] if b["name"] == "half")
+    assert (half["unique_commits"], half["unlanded_commits"]) == (2, 1)
+    assert entry["summary"]["branches_already_landed"] == []
+
+
+def test_landed_check_uses_the_remote_head(make_repo, capsys):
+    repo = _landed(make_repo, None, "squash")
+    git(repo, "update-ref", "refs/remotes/origin/trunk", "main")
+    git(repo, "symbolic-ref", "refs/remotes/origin/HEAD", "refs/remotes/origin/trunk")
+    git(repo, "branch", "-q", "--unset-upstream", "main")
+    git(repo, "update-ref", "-d", "refs/remotes/origin/main")
+    _, data = receipt(capsys, str(repo))
+    assert data["repos"][0]["summary"]["branches_already_landed"] == ["done"]
 
 
 def test_repo_without_remote_counts_every_commit(make_repo, capsys):
@@ -249,6 +311,30 @@ def test_repository_config_cannot_run_a_command(make_repo, tmp_path, capsys):
     (repo / "file.txt").write_text("dirty\n")
     receipt(capsys, str(repo))
     assert not marker.exists()
+
+
+def test_landed_check_cannot_run_a_diff_driver(make_repo, tmp_path, capsys):
+    repo = _landed(make_repo, tmp_path, "squash")
+    marker = tmp_path / "ran"
+    tool = tmp_path / "driver.sh"
+    tool.write_text(f"#!/bin/sh\ntouch '{marker}'\ncat \"$1\"\n")
+    tool.chmod(0o755)
+    (repo / ".gitattributes").write_text("*.txt diff=evil\n")
+    git(repo, "config", "diff.external", str(tool))
+    git(repo, "config", "diff.evil.command", str(tool))
+    git(repo, "config", "diff.evil.textconv", str(tool))
+    git(repo, "config", "log.showSignature", "true")
+    git(repo, "config", "gpg.program", str(tool))
+    _, data = receipt(capsys, str(repo))
+    assert data["repos"][0]["summary"]["branches_already_landed"] == ["done"]
+    assert not marker.exists()
+
+
+def test_markdown_lists_landed_branches(make_repo, tmp_path, capsys):
+    repo = _landed(make_repo, tmp_path, "squash")
+    assert cli.main(["inventory", str(repo)]) == 0
+    out = capsys.readouterr().out
+    assert "already on a remote default branch by patch content: done" in out
 
 
 def test_markdown_table_names_risky_branches(make_repo, capsys):
