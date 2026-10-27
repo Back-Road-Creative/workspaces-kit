@@ -71,7 +71,7 @@ right now?") and for package provenance. See `catalog/prior-art.md`.
 
 ## License
 
-Not yet chosen. Until a license file is added, no license is granted.
+Apache-2.0. See `LICENSE`.
 
 ## Contributing and security
 
