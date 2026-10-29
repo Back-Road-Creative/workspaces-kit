@@ -3,7 +3,8 @@
 Small, offline tools for people who keep many Git repositories and Python
 environments on one machine, plus a catalog of the public projects they come from.
 
-**Status:** early. One tool so far. Interfaces may change before 1.0.
+**Status:** experimental. One tool; no new features are planned. Bug and
+security fixes are still accepted, and interfaces may change before 1.0.
 
 ## The problem
 
